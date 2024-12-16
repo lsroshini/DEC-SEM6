@@ -1,0 +1,64 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Drawing App</title>
+    <style>
+        body { margin: 0; }
+        canvas { border: 1px solid #000; display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+
+        // Resize canvas to fill the window
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Socket.IO setup
+        const socket = io();
+
+        // Start drawing
+        canvas.addEventListener('mousedown', (e) => {
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.clientX, e.clientY);
+        });
+
+        // Draw on canvas
+        canvas.addEventListener('mousemove', (e) => {
+            if (!drawing) return;
+            ctx.lineTo(e.clientX, e.clientY);
+            ctx.stroke();
+
+            // Emit drawing data to server
+            socket.emit('drawing', { x: e.clientX, y: e.clientY });
+        });
+
+        // Stop drawing
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+        });
+
+        // Receive drawing data from server
+        socket.on('drawing', (data) => {
+            ctx.lineTo(data.x, data.y);
+            ctx.stroke();
+        });
+
+        // Clear the canvas on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+    </script>
+</body>
+</html>
